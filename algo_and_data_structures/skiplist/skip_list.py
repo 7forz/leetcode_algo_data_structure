@@ -32,14 +32,15 @@ class SkipList:
 
         实际上是多层的链表，底层是完整的链表，越上层的链表越稀疏
     """
-    _ROOT = object()  # 为了不使用哨兵节点，定义一个特殊值，该值视作比任何值都小
+    __ROOT = object()  # 为了不使用哨兵节点，定义一个特殊值，该值视作比任何值都小
 
-    def __init__(self):
-        self.size = 0
-        self.roots: List[Node] = [Node(self._ROOT)]  # 初始为1层root节点
+    def __init__(self, promote_probability=0.5):
+        self._size = 0
+        self._promote_probability = promote_probability
+        self.roots: List[Node] = [Node(self.__ROOT)]  # 初始为1层root节点
 
     def __len__(self):
-        return self.size
+        return self._size
 
     def __str__(self):
         return str(self.to_list())
@@ -99,7 +100,7 @@ class SkipList:
         current_node = self.roots[i]
 
         # 搜索高层的节点，记录往下移动的节点
-        while i > 0 and (current_node.value is self._ROOT or val > current_node.value):
+        while i > 0 and (current_node.value is self.__ROOT or val > current_node.value):
             while current_node.next and val > current_node.next.value:
                 current_node = current_node.next
             memory_nodes.append(current_node)
@@ -115,19 +116,19 @@ class SkipList:
 
     def add(self, val):
         # print('add', val)  ################################ debug
-        self.size += 1
+        self._size += 1
 
         # 找到标红的节点
         memory_nodes = self._find(val)
 
         # 首先在底层插入节点，这是100%插入的
         new_node = Node(val)
-        self._insert_node(new_node=new_node, prev=memory_nodes.pop())  #从底层开始pop
+        self._insert_node(new_node=new_node, prev=memory_nodes.pop())  # 从底层开始pop
         current_node = new_node
 
         # 然后随机决定是否向上层添加相同值节点作为索引
         current_level = 1  # 底层的level是0，1即上一层
-        while random.random() > 0.5:
+        while random.random() < self._promote_probability:
             # 新建节点，确定dense的指向
             upper_node = Node(val)
             upper_node.dense = current_node
@@ -136,7 +137,7 @@ class SkipList:
             if current_level <= len(self.roots):  # 不用加新的层，在之前搜索的节点之后添加节点
                 self._insert_node(new_node=upper_node, prev=memory_nodes.pop())
             else:  # 加新的层有2个节点： root节点 -> 新节点(upper_node) -> None
-                new_root_node = Node(self._ROOT, next=upper_node)  # 新的root节点
+                new_root_node = Node(self.__ROOT, next=upper_node)  # 新的root节点
                 new_root_node.dense = self.roots[current_level-2]
                 self.roots.append(new_root_node)
                 break
@@ -163,7 +164,7 @@ if __name__ == "__main__":
     LENGTH = 100000
     # random.seed(1234)
 
-    skip_list = SkipList()
+    skip_list = SkipList(promote_probability=0.5)
 
     test_data = [random.randint(1, MAX) for _ in range(LENGTH)]
 
