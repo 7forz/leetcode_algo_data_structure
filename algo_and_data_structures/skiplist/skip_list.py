@@ -32,12 +32,10 @@ class SkipList:
 
         实际上是多层的链表，底层是完整的链表，越上层的链表越稀疏
     """
-    __ROOT = object()  # 为了不使用哨兵节点，定义一个特殊值，该值视作比任何值都小
-
     def __init__(self, promote_probability=0.5):
         self._size = 0
         self._promote_probability = promote_probability
-        self.roots: List[Node] = [Node(self.__ROOT)]  # 初始为1层root节点
+        self.roots: List[Node] = [Node(None)]  # 初始为1层root节点，root节点的值没有用到，可填None
 
     def __len__(self):
         return self._size
@@ -100,7 +98,7 @@ class SkipList:
         current_node = self.roots[i]
 
         # 搜索高层的节点，记录往下移动的节点
-        while i > 0 and (current_node.value is self.__ROOT or val > current_node.value):
+        while i > 0:
             while current_node.next and val > current_node.next.value:
                 current_node = current_node.next
             memory_nodes.append(current_node)
@@ -137,7 +135,7 @@ class SkipList:
             if current_level <= len(self.roots):  # 不用加新的层，在之前搜索的节点之后添加节点
                 self._insert_node(new_node=upper_node, prev=memory_nodes.pop())
             else:  # 加新的层有2个节点： root节点 -> 新节点(upper_node) -> None
-                new_root_node = Node(self.__ROOT, next=upper_node)  # 新的root节点
+                new_root_node = Node(None, next=upper_node)  # 新的root节点
                 new_root_node.dense = self.roots[current_level-2]
                 self.roots.append(new_root_node)
                 break
@@ -152,7 +150,8 @@ class SkipList:
         for node in memory_nodes:  # 从上层往下层
             if node.next and node.next.value == val:
                 self._remove_node(node.next, node)
-        
+        self._size -= 1
+
         # 从上层往下层，检查是否有层被清空，有则把该层的root节点也清除，底层的除外
         for i in range(len(self.roots)-1, 0, -1):
             if self.roots[i].next is None:

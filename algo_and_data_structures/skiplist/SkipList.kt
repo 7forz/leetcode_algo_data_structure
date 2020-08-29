@@ -1,15 +1,11 @@
 import kotlin.random.Random
 import kotlin.random.nextInt
 
-class Node<T : Comparable<T>>(val value: Any, var next: Node<T>? = null, var dense: Node<T>? = null)
+class Node<T : Comparable<T>>(val value: T?, var next: Node<T>? = null, var dense: Node<T>? = null)
 
 class SkipList<T : Comparable<T>>(val promoteProbability: Double = 0.5) {
-    companion object {
-        val ROOT_VALUE = Any()
-    }
-
     private var size = 0
-    private val roots = mutableListOf<Node<T>>(Node(ROOT_VALUE)) // 从底层到顶层
+    private val roots = mutableListOf<Node<T>>(Node(null)) // roots从底层到顶层
 
     fun size() = size
 
@@ -17,7 +13,7 @@ class SkipList<T : Comparable<T>>(val promoteProbability: Double = 0.5) {
         val list = mutableListOf<T>()
         var node = roots[0].next
         while (node != null) {
-            list.add(node.value as T)
+            list.add(node.value!!)
             node = node.next
         }
         return list
@@ -49,8 +45,8 @@ class SkipList<T : Comparable<T>>(val promoteProbability: Double = 0.5) {
         var currentNode = roots[i]
 
         // 在高层搜索
-        while (i > 0 && (currentNode.value == ROOT_VALUE || value > (currentNode.value as T))) {
-            while (currentNode.next != null && value > currentNode.next!!.value as T) {
+        while (i > 0) {
+            while (currentNode.next != null && value > currentNode.next!!.value!!) {
                 currentNode = currentNode.next!!
             }
             memoryNodes.add(currentNode)
@@ -59,7 +55,7 @@ class SkipList<T : Comparable<T>>(val promoteProbability: Double = 0.5) {
         }
 
         // 在底层搜索
-        while (currentNode.next != null && value > currentNode.next!!.value as T) {
+        while (currentNode.next != null && value > currentNode.next!!.value!!) {
             currentNode = currentNode.next!!
         }
         memoryNodes.add(currentNode)
@@ -86,7 +82,7 @@ class SkipList<T : Comparable<T>>(val promoteProbability: Double = 0.5) {
             if (currentLevel <= roots.size) { // 不用加新的层
                 insertNode(upperNode, memoryNodes.removeAt(memoryNodes.lastIndex))
             } else {
-                val newRootNode = Node<T>(ROOT_VALUE, next = upperNode, dense = roots[currentLevel - 2])
+                val newRootNode = Node<T>(null, next = upperNode, dense = roots[currentLevel - 2])
                 roots.add(newRootNode)
                 break
             }
@@ -103,6 +99,7 @@ class SkipList<T : Comparable<T>>(val promoteProbability: Double = 0.5) {
             if (node.next != null && node.next!!.value == value)
                 removeNode(node.next!!, node)
         }
+        size -= 1
 
         // 检查是否有层被清空
         for (i in (roots.size - 1) downTo 1)
